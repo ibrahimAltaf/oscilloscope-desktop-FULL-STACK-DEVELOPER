@@ -182,12 +182,13 @@ async def signal_batch(request: Request) -> dict[str, Any]:
     st: Settings = _state(request).settings
     count = min(max(int(st.read_chunk_samples), 128), 2048)
     rate = float(st.sample_rate_hz)
+    frequency_hz = min(float(st.simulation_frequency_hz), max(rate / 20.0, 1.0))
     t0 = time.time()
     y = generate_sine_chunk(
         t0 % 1_000.0,
         rate,
         count,
-        frequency_hz=st.simulation_frequency_hz,
+        frequency_hz=frequency_hz,
         amplitude=st.simulation_amplitude,
     )
     return {

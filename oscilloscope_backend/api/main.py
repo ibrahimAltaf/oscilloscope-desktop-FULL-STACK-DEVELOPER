@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -50,6 +51,12 @@ class BufferSummaryResponse(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+    if os.getenv("VERCEL") == "1":
+        settings.log_file_enabled = False
+        settings.buffer_seconds = min(settings.buffer_seconds, 5.0)
+        settings.sample_rate_hz = min(settings.sample_rate_hz, 10_000.0)
+        settings.read_chunk_samples = min(settings.read_chunk_samples, 512)
+        settings.capture_interval_s = max(settings.capture_interval_s, 0.05)
     setup_logging(settings=settings)
     loop = asyncio.get_running_loop()
 

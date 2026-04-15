@@ -138,6 +138,7 @@ http://127.0.0.1:8765
 This repository includes the required Vercel backend config:
 
 * `app.py` exports the FastAPI `app` for Vercel discovery.
+* `api/index.py` is the explicit Vercel serverless entrypoint.
 * `vercel.json` marks this as a backend deployment.
 * The backend automatically skips file logging on Vercel, so no Vercel environment variables are required for the simulation API.
 * `.vercelignore` keeps desktop build files, logs, caches, and the Windows DLL out of the serverless bundle.

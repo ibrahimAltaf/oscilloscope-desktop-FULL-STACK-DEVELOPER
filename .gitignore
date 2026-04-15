@@ -18,5 +18,6 @@ desktop/oscilloscope-desktop-main/node_modules/
 desktop/oscilloscope-desktop-main/.env
 desktop/oscilloscope-desktop-main/dist/
 desktop/oscilloscope-desktop-main/dist-electron/
+desktop/oscilloscope-desktop-main/release/
 
 .vercel/

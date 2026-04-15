@@ -3,9 +3,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Any
 
+import numpy as np
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -15,6 +18,7 @@ from oscilloscope_backend.core.capture_service import CaptureService
 from oscilloscope_backend.core.device_manager import DeviceManager
 from oscilloscope_backend.hantek.sdk import CallingConvention, HantekSDK
 from oscilloscope_backend.processing.buffer import CircularSampleBuffer
+from oscilloscope_backend.processing.signal import generate_sine_chunk
 from oscilloscope_backend.utils.config import Settings, get_settings
 from oscilloscope_backend.utils.logging import setup_logging
 
@@ -171,6 +175,36 @@ async def status(request: Request) -> StatusResponse:
         volt_div=st.volt_div,
         time_div_s=st.time_div_s,
     )
+
+
+@app.get("/signal/batch")
+async def signal_batch(request: Request) -> dict[str, Any]:
+    st: Settings = _state(request).settings
+    count = min(max(int(st.read_chunk_samples), 128), 2048)
+    rate = float(st.sample_rate_hz)
+    t0 = time.time()
+    y = generate_sine_chunk(
+        t0 % 1_000.0,
+        rate,
+        count,
+        frequency_hz=st.simulation_frequency_hz,
+        amplitude=st.simulation_amplitude,
+    )
+    return {
+        "batch_seq": int(t0 * 10),
+        "t0": t0,
+        "t0_unix": t0,
+        "sample_rate_hz": rate,
+        "sample_count": int(y.size),
+        "samples": y.astype(np.float32).tolist(),
+        "mode": "simulation",
+        "server_time_utc": datetime.now(timezone.utc).isoformat(),
+        "ptp": float(np.ptp(y)) if y.size else 0.0,
+        "rms": float(np.sqrt(np.mean(np.square(y.astype(np.float64))))) if y.size else 0.0,
+        "volt_div": st.volt_div,
+        "time_div_s": st.time_div_s,
+        "drops": 0,
+    }
 
 
 @app.api_route("/start", methods=["GET", "POST"], response_model=StartStopResponse)

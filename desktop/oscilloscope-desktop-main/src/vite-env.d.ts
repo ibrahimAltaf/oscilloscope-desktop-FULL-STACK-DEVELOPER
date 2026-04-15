@@ -18,6 +18,7 @@ declare global {
       startCapture: () => Promise<CaptureResult>;
       stopCapture: () => Promise<CaptureResult>;
       getStatus: () => Promise<CaptureResult>;
+      getSignalBatch: () => Promise<CaptureResult>;
       getConfig: () => Promise<AppConfig>;
     };
   }

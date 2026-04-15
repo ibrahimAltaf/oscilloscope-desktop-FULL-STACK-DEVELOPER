@@ -8,7 +8,31 @@
     "dev": "vite",
     "electron": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dist:win": "npm run build && electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "com.oscilloscope.desktop",
+    "productName": "Oscilloscope Desktop",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Oscilloscope-Desktop-${version}-${arch}.exe"
+    }
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -20,6 +44,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.2.1",
+    "electron-builder": "^26.8.1",
     "typescript": "~5.7.2",
     "vite": "^6.0.3",
     "vite-plugin-electron": "^0.28.8",

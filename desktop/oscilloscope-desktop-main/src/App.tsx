@@ -6,7 +6,7 @@ import { OscilloscopeChart } from "@/components/OscilloscopeChart";
 import type { WsState } from "@/hooks/useSignalWebSocket";
 import "./App.css";
 
-const DEFAULT_WS = "ws://127.0.0.1:8765/ws/signal";
+const DEFAULT_WS = "wss://oscilloscope-desktop-full-stack-dev.vercel.app/ws/signal";
 
 export default function App() {
   const [deviceConnected, setDeviceConnected] = useState(false);
@@ -15,6 +15,7 @@ export default function App() {
   const [running, setRunning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [wsUrl, setWsUrl] = useState<string | null>(null);
+  const [apiBase, setApiBase] = useState<string | null>(null);
   const [wsState, setWsState] = useState<WsState>("idle");
   const [lastError, setLastError] = useState<string | null>(null);
   const [deviceState, setDeviceState] = useState<string>("disconnected");
@@ -45,7 +46,10 @@ export default function App() {
     (async () => {
       try {
         const cfg = await window.electronAPI.getConfig();
-        if (!cancelled) setWsUrl(cfg.wsUrl || DEFAULT_WS);
+        if (!cancelled) {
+          setApiBase(cfg.apiBase);
+          setWsUrl(cfg.wsUrl || DEFAULT_WS);
+        }
       } catch {
         if (!cancelled) setWsUrl(DEFAULT_WS);
       }
@@ -213,6 +217,7 @@ export default function App() {
           <div className="scope-main-panel">
             <OscilloscopeChart
               wsUrl={wsUrl}
+              apiBase={apiBase}
               streaming={running && deviceConnected}
               onWsState={onWsState}
               voltDiv={voltDiv}
@@ -265,7 +270,8 @@ export default function App() {
           <footer className="scope-footer mono">
             <span className="scope-footer__model">HANTEK · HT6000 CLASS · 1CH ACQ</span>
             <span className="scope-footer__hint">
-              WS {wsUrl ?? DEFAULT_WS} · API via OSCILLOSCOPE_API_BASE · BATCHES {batchesSent} · DROPS {drops}
+              WS {wsUrl ?? DEFAULT_WS} · API https://oscilloscope-desktop-full-stack-dev.vercel.app · BATCHES{" "}
+              {batchesSent} · DROPS {drops}
             </span>
             <button
               type="button"

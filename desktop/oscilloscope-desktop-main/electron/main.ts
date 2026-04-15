@@ -13,7 +13,7 @@ const isDev = !!VITE_DEV_SERVER_URL;
 
 const defaultApiBase = () =>
   process.env.OSCILLOSCOPE_API_BASE?.replace(/\/$/, "") ??
-  "http://127.0.0.1:8765";
+  "https://oscilloscope-desktop-full-stack-dev.vercel.app";
 
 async function fetchJson(
   method: "GET" | "POST",
@@ -72,6 +72,7 @@ app.whenReady().then(() => {
   ipcMain.handle("capture:start", () => fetchJson("POST", "/start"));
   ipcMain.handle("capture:stop", () => fetchJson("POST", "/stop"));
   ipcMain.handle("capture:status", () => fetchJson("GET", "/status"));
+  ipcMain.handle("signal:batch", () => fetchJson("GET", "/signal/batch"));
   ipcMain.handle("config:get", () => ({
     apiBase: defaultApiBase(),
     wsUrl:

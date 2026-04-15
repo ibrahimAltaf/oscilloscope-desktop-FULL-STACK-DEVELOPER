@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
   startCapture: () => ipcRenderer.invoke("capture:start"),
   stopCapture: () => ipcRenderer.invoke("capture:stop"),
   getStatus: () => ipcRenderer.invoke("capture:status"),
+  getSignalBatch: () => ipcRenderer.invoke("signal:batch"),
   getConfig: () => ipcRenderer.invoke("config:get"),
 });

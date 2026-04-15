@@ -13,7 +13,7 @@ Windows: default to __stdcall (WinDLL), fallback to CDLL (__cdecl) if needed.
 import logging
 import os
 import sys
-from ctypes import CDLL, POINTER, WinDLL, byref, c_int, c_int16, c_void_p
+from ctypes import CDLL, POINTER, byref, c_int, c_int16, c_void_p
 from enum import IntEnum
 from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional
@@ -23,6 +23,11 @@ import numpy as np
 from oscilloscope_backend.hantek.ht6000_errors import HT6000Status, describe_status
 
 logger = logging.getLogger(__name__)
+
+if sys.platform.startswith("win"):
+    from ctypes import WinDLL  # type: ignore[attr-defined]
+else:
+    WinDLL = None  # type: ignore[assignment]
 
 
 class HantekSDKError(RuntimeError):
@@ -89,7 +94,8 @@ class HantekSDK:
         elif env_path:
             resolved = Path(env_path)
         else:
-            resolved = Path(__file__).resolve().parent / "HTHardDll.dll"
+            bundled = Path(__file__).resolve().parent / "HTHardDll.dll"
+            resolved = bundled if sys.platform.startswith("win") and bundled.is_file() else None
 
         self._dll_path = resolved if resolved else None
         self._calling_convention = calling_convention
@@ -133,10 +139,13 @@ class HantekSDK:
 
         try:
             if self._calling_convention == CallingConvention.STDCALL:
-                try:
-                    self._dll = WinDLL(str(path))
-                except OSError:
-                    # Fallback to CDLL if vendor uses cdecl despite stdcall flag
+                if WinDLL is not None:
+                    try:
+                        self._dll = WinDLL(str(path))
+                    except OSError:
+                        # Fallback to CDLL if vendor uses cdecl despite stdcall flag
+                        self._dll = CDLL(str(path))
+                else:
                     self._dll = CDLL(str(path))
             else:
                 self._dll = CDLL(str(path))

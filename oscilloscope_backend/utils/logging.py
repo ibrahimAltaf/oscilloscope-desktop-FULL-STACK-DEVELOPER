@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 from typing import Any, Optional
@@ -53,26 +54,29 @@ def setup_logging(
     )
     root.addHandler(console)
 
-    if st.log_file_enabled:
+    if st.log_file_enabled and os.getenv("VERCEL") != "1":
         path = st.resolved_log_file_path()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        fh = RotatingFileHandler(
-            path,
-            maxBytes=st.log_max_bytes,
-            backupCount=st.log_backup_count,
-            encoding="utf-8",
-        )
-        fh.setLevel(numeric)
-        if st.log_json_file:
-            fh.setFormatter(JsonLineFormatter(datefmt="%Y-%m-%dT%H:%M:%S"))
-        else:
-            fh.setFormatter(
-                logging.Formatter(
-                    "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-                    datefmt="%Y-%m-%d %H:%M:%S",
-                )
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            fh = RotatingFileHandler(
+                path,
+                maxBytes=st.log_max_bytes,
+                backupCount=st.log_backup_count,
+                encoding="utf-8",
             )
-        root.addHandler(fh)
+            fh.setLevel(numeric)
+            if st.log_json_file:
+                fh.setFormatter(JsonLineFormatter(datefmt="%Y-%m-%dT%H:%M:%S"))
+            else:
+                fh.setFormatter(
+                    logging.Formatter(
+                        "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+                        datefmt="%Y-%m-%d %H:%M:%S",
+                    )
+                )
+            root.addHandler(fh)
+        except OSError as e:
+            root.warning("File logging disabled: %s", e)
 
     logger = logging.getLogger(name or "oscilloscope")
     logger.setLevel(numeric)

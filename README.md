@@ -133,6 +133,38 @@ Backend runs at:
 http://127.0.0.1:8765
 ```
 
+### Deploy Backend on Vercel
+
+This repository includes the required Vercel backend config:
+
+* `app.py` exports the FastAPI `app` for Vercel discovery.
+* `vercel.json` marks this as a backend deployment.
+* The backend automatically skips file logging on Vercel, so no Vercel environment variables are required for the simulation API.
+* `.vercelignore` keeps desktop build files, logs, caches, and the Windows DLL out of the serverless bundle.
+
+Deploy from the repository root:
+
+```bash
+npm i -g vercel
+vercel login
+vercel
+```
+
+For production:
+
+```bash
+vercel --prod
+```
+
+After deploy, test:
+
+```bash
+curl https://your-project.vercel.app/health
+curl https://your-project.vercel.app/status
+```
+
+Important: Vercel cannot access a local USB oscilloscope or load the bundled Windows DLL. Vercel Functions also are not the right runtime for the persistent WebSocket stream used by `/ws/signal`. Use Vercel for the HTTP API/simulation deployment. For real Hantek hardware capture and live waveform streaming, run the backend on the Windows machine connected to the device.
+
 ---
 
 ### 2. Frontend Setup

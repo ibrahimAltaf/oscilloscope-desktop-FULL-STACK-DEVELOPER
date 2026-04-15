@@ -124,6 +124,16 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/")
+async def root() -> dict[str, str]:
+    return {
+        "service": "oscilloscope-backend",
+        "status": "ok",
+        "health": "/health",
+        "docs": "/docs",
+    }
+
+
 @app.get("/buffer/summary", response_model=BufferSummaryResponse)
 async def buffer_summary(request: Request) -> BufferSummaryResponse:
     buf: CircularSampleBuffer = _state(request).sample_buffer

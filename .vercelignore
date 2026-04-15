@@ -1,0 +1,12 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+logs/
+oscilloscope_backend/logs/
+desktop/
+oscilloscope_backend/hantek/HTHardDll.dll
+

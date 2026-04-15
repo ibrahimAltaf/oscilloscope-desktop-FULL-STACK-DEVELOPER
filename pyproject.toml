@@ -1,0 +1,8 @@
+[project]
+name = "oscilloscope-backend"
+version = "1.0.0"
+requires-python = ">=3.11"
+
+[project.scripts]
+app = "oscilloscope_backend.api.main:app"
+

@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -35,6 +35,7 @@ class StatusResponse(BaseModel):
     running: bool
     device_state: str
     capture_state: str
+    last_error: str | None
     buffer_seconds: float
     sample_rate_hz: float
     simulation: bool
@@ -165,6 +166,7 @@ async def status(request: Request) -> StatusResponse:
         running=cap.is_running,
         device_state=dm.state.value,
         capture_state=dm.state.value,
+        last_error=dm.last_error,
         buffer_seconds=st.buffer_seconds,
         sample_rate_hz=st.sample_rate_hz,
         simulation=dm.is_simulating,
@@ -180,6 +182,40 @@ async def status(request: Request) -> StatusResponse:
 @app.get("/signal/batch")
 async def signal_batch(request: Request) -> dict[str, Any]:
     st: Settings = _state(request).settings
+    dm: DeviceManager = _state(request).device_manager
+    if not dm.is_simulating:
+        if not dm.is_hardware_active:
+            raise HTTPException(
+                status_code=503,
+                detail=dm.last_error or "Hantek hardware is not connected.",
+            )
+        frames = _state(request).sample_buffer.snapshot_frames()
+        if not frames:
+            raise HTTPException(
+                status_code=503,
+                detail="No hardware samples available. Start capture with a connected Hantek device.",
+            )
+        frame = frames[-1]
+        y = frame.samples
+        return {
+            "batch_seq": _state(request).capture.batches_sent,
+            "t0": frame.t0,
+            "t0_unix": frame.t0,
+            "sample_rate_hz": frame.sample_rate_hz,
+            "sample_count": int(y.size),
+            "samples": y.astype(np.float32).tolist(),
+            "mode": "hardware",
+            "server_time_utc": datetime.now(timezone.utc).isoformat(),
+            "ptp": float(np.ptp(y)) if y.size else 0.0,
+            "rms": float(np.sqrt(np.mean(np.square(y.astype(np.float64))))) if y.size else 0.0,
+            "volt_div": st.volt_div,
+            "time_div_s": st.time_div_s,
+            "drops": _state(request).broadcaster.drop_count,
+        }
+
+    if not st.simulation_enabled:
+        raise HTTPException(status_code=503, detail="Simulation is disabled.")
+
     count = min(max(int(st.read_chunk_samples), 128), 2048)
     rate = float(st.sample_rate_hz)
     frequency_hz = min(float(st.simulation_frequency_hz), max(rate / 20.0, 1.0))
@@ -211,9 +247,27 @@ async def signal_batch(request: Request) -> dict[str, Any]:
 @app.api_route("/start", methods=["GET", "POST"], response_model=StartStopResponse)
 async def start_capture(request: Request) -> StartStopResponse:
     cap: CaptureService = _state(request).capture
+    dm: DeviceManager = _state(request).device_manager
     if cap.is_running:
+        if dm.state.value not in {"connected", "capturing", "simulating"}:
+            return StartStopResponse(
+                ok=False,
+                message=dm.last_error or "Capture is not connected to the Hantek device.",
+                running=False,
+            )
         return StartStopResponse(ok=True, message="Already running", running=True)
     cap.start()
+    deadline = time.monotonic() + 2.0
+    while time.monotonic() < deadline:
+        if dm.state.value in {"connected", "capturing", "simulating", "error"} or not cap.is_running:
+            break
+        await asyncio.sleep(0.05)
+    if dm.state.value not in {"connected", "capturing", "simulating"} or not cap.is_running:
+        return StartStopResponse(
+            ok=False,
+            message=dm.last_error or "Capture could not start. Check Hantek connection and DLL path.",
+            running=False,
+        )
     return StartStopResponse(ok=True, message="Capture started", running=True)
 
 

@@ -6,7 +6,32 @@ import { OscilloscopeChart } from "@/components/OscilloscopeChart";
 import type { WsState } from "@/hooks/useSignalWebSocket";
 import "./App.css";
 
-const DEFAULT_WS = "wss://oscilloscope-desktop-full-stack-dev.vercel.app/ws/signal";
+const DEFAULT_API_BASE = "http://127.0.0.1:8765";
+const DEFAULT_WS = "ws://127.0.0.1:8765/ws/signal";
+
+type BackendStatus = {
+  running?: boolean;
+  device_state?: string;
+  capture_state?: string;
+  last_error?: string | null;
+  simulation?: boolean;
+  batches_sent?: number;
+  drops?: number;
+  reconnect_failures?: number;
+  volt_div?: number;
+  time_div_s?: number;
+};
+
+const hardwareReadyStates = new Set(["CONNECTED", "CAPTURING"]);
+
+function responseMessage(res: { data: unknown; status: number; error?: string }, fallback: string) {
+  if (typeof res.data === "object" && res.data) {
+    const data = res.data as { detail?: unknown; message?: unknown };
+    if (data.detail != null) return String(data.detail);
+    if (data.message != null) return String(data.message);
+  }
+  return res.error ?? `${fallback} (HTTP ${res.status})`;
+}
 
 export default function App() {
   const [deviceConnected, setDeviceConnected] = useState(false);
@@ -29,7 +54,7 @@ export default function App() {
     const saved = localStorage.getItem("scope-theme");
     return saved === "light" ? "light" : "dark";
   });
-  const deviceReady = deviceState === "CONNECTED" || deviceState === "CAPTURING";
+  const deviceReady = hardwareReadyStates.has(deviceState);
   const deviceError = deviceState === "ERROR";
 
   useEffect(() => {
@@ -59,21 +84,57 @@ export default function App() {
     };
   }, []);
 
+  const applyStatus = useCallback((st: BackendStatus) => {
+    const ds = (st.capture_state || st.device_state || "disconnected").toUpperCase();
+    setDeviceState(ds);
+    if (typeof st.batches_sent === "number") setBatchesSent(st.batches_sent);
+    if (typeof st.drops === "number") setDrops(st.drops);
+    if (typeof st.reconnect_failures === "number") setReconnectFailures(st.reconnect_failures);
+    if (typeof st.volt_div === "number") setVoltDiv(`${st.volt_div.toFixed(2)} V/div`);
+    if (typeof st.time_div_s === "number") {
+      setTimeDiv(
+        st.time_div_s >= 1
+          ? `${st.time_div_s.toFixed(3)} s/div`
+          : `${(st.time_div_s * 1e3).toFixed(1)} ms/div`,
+      );
+    }
+    if (st.last_error) {
+      setLastError(st.last_error);
+    } else if (hardwareReadyStates.has(ds)) {
+      setLastError(null);
+    }
+    setRunning(Boolean(st.running) && hardwareReadyStates.has(ds));
+    return ds;
+  }, []);
+
+  const readStatus = useCallback(async () => {
+    const res = await window.electronAPI.getStatus();
+    if (!res.ok || !res.data || typeof res.data !== "object") {
+      throw new Error(responseMessage(res, "Status failed"));
+    }
+    return res.data as BackendStatus;
+  }, []);
+
   const onStart = useCallback(async () => {
     setBusy(true);
     setLastError(null);
     try {
       const res = await window.electronAPI.startCapture();
       if (!res.ok) {
-        const msg =
-          typeof res.data === "object" && res.data && "detail" in res.data
-            ? String((res.data as { detail?: unknown }).detail)
-            : res.error ?? `HTTP ${res.status}`;
-        setLastError(msg || "Start failed");
+        setLastError(responseMessage(res, "Start failed"));
         setRunning(false);
         return;
       }
-      setRunning(true);
+      const status = await readStatus();
+      const ds = applyStatus(status);
+      if (!hardwareReadyStates.has(ds)) {
+        setLastError(
+          status.last_error ||
+            "Hantek is not communicating with the backend. Check the USB connection, driver, and DLL path.",
+        );
+        setRunning(false);
+        return;
+      }
       setDeviceConnected(true);
     } catch (e) {
       setLastError(e instanceof Error ? e.message : String(e));
@@ -81,7 +142,7 @@ export default function App() {
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [applyStatus, readStatus]);
 
   const onStop = useCallback(async () => {
     setBusy(true);
@@ -115,36 +176,18 @@ export default function App() {
         const res = await window.electronAPI.getStatus();
         if (cancelled) return;
         if (res && res.ok && typeof res.data === "object" && res.data) {
-          const st = res.data as {
-            device_state?: string;
-            capture_state?: string;
-            batches_sent?: number;
-            drops?: number;
-            reconnect_failures?: number;
-            volt_div?: number;
-            time_div_s?: number;
-          };
-          const ds = (st.capture_state || st.device_state || "disconnected").toUpperCase();
-          setDeviceState(ds);
-          if (typeof st.batches_sent === "number") setBatchesSent(st.batches_sent);
-          if (typeof st.drops === "number") setDrops(st.drops);
-          if (typeof st.reconnect_failures === "number") setReconnectFailures(st.reconnect_failures);
-          if (typeof st.volt_div === "number") setVoltDiv(`${st.volt_div.toFixed(2)} V/div`);
-          if (typeof st.time_div_s === "number") {
-            setTimeDiv(
-              st.time_div_s >= 1
-                ? `${st.time_div_s.toFixed(3)} s/div`
-                : `${(st.time_div_s * 1e3).toFixed(1)} ms/div`,
-            );
-          }
+          const ds = applyStatus(res.data as BackendStatus);
+          if (!hardwareReadyStates.has(ds)) setRunning(false);
         } else if (res && !res.ok) {
           setDeviceState("ERROR");
           setLastError(res.error ?? `Status HTTP ${res.status}`);
+          setRunning(false);
         }
       } catch (e) {
         if (!cancelled) {
           setDeviceState("ERROR");
           setLastError(e instanceof Error ? e.message : String(e));
+          setRunning(false);
         }
       }
     };
@@ -159,41 +202,42 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [deviceConnected]);
+  }, [applyStatus, deviceConnected]);
 
   const handleConnect = useCallback(async () => {
     setConnecting(true);
     setConnectError(null);
     setLastError(null);
     try {
-      const status = await window.electronAPI.getStatus();
-      const state =
-        status && status.ok && status.data && typeof status.data === "object"
-          ? (status.data as { device_state?: string; capture_state?: string })
-          : null;
-      const ds = state?.capture_state || state?.device_state;
-      if (ds && (ds.toUpperCase() === "CONNECTED" || ds.toUpperCase() === "CAPTURING")) {
+      const current = await readStatus();
+      const currentState = applyStatus(current);
+      if (hardwareReadyStates.has(currentState)) {
         setDeviceConnected(true);
-        setDeviceState(ds.toUpperCase());
-        setRunning(ds.toUpperCase() === "CAPTURING");
         return;
       }
       // try start capture to bring device up
       const start = await window.electronAPI.startCapture();
       if (!start.ok) {
-        throw new Error(start.error ?? `Start failed (HTTP ${start.status})`);
+        throw new Error(responseMessage(start, "Start failed"));
+      }
+      const started = await readStatus();
+      const startedState = applyStatus(started);
+      if (!hardwareReadyStates.has(startedState)) {
+        throw new Error(
+          started.last_error ||
+            "Hantek is not communicating with the backend. Check the USB connection, driver, and DLL path.",
+        );
       }
       setDeviceConnected(true);
-      setRunning(true);
-      setDeviceState("CAPTURING");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setConnectError(msg);
       setDeviceConnected(false);
+      setRunning(false);
     } finally {
       setConnecting(false);
     }
-  }, []);
+  }, [applyStatus, readStatus]);
 
   return (
     <DashboardLayout
@@ -217,8 +261,7 @@ export default function App() {
           <div className="scope-main-panel">
             <OscilloscopeChart
               wsUrl={wsUrl}
-              apiBase={apiBase}
-              streaming={running && deviceConnected}
+              streaming={running && deviceConnected && deviceReady}
               onWsState={onWsState}
               voltDiv={voltDiv}
               timeDiv={timeDiv}
@@ -228,7 +271,7 @@ export default function App() {
             )}
             {deviceError && (
               <div className="scope-warning scope-warning--error mono">
-                Device error. Check connections and restart capture.
+                {lastError || "Device error. Check connections and restart capture."}
               </div>
             )}
           </div>
@@ -270,8 +313,7 @@ export default function App() {
           <footer className="scope-footer mono">
             <span className="scope-footer__model">HANTEK · HT6000 CLASS · 1CH ACQ</span>
             <span className="scope-footer__hint">
-              WS {wsUrl ?? DEFAULT_WS} · API https://oscilloscope-desktop-full-stack-dev.vercel.app · BATCHES{" "}
-              {batchesSent} · DROPS {drops}
+              WS {wsUrl ?? DEFAULT_WS} · API {apiBase ?? DEFAULT_API_BASE} · BATCHES {batchesSent} · DROPS {drops}
             </span>
             <button
               type="button"

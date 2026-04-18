@@ -13,7 +13,7 @@ const isDev = !!VITE_DEV_SERVER_URL;
 
 const defaultApiBase = () =>
   process.env.OSCILLOSCOPE_API_BASE?.replace(/\/$/, "") ??
-  "https://oscilloscope-desktop-full-stack-dev.vercel.app";
+  "http://127.0.0.1:8765";
 
 async function fetchJson(
   method: "GET" | "POST",

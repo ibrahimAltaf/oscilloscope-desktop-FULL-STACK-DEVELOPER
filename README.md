@@ -140,7 +140,7 @@ This repository includes the required Vercel backend config:
 * `app.py` exports the FastAPI `app` for Vercel discovery.
 * `api/index.py` is the explicit Vercel serverless entrypoint.
 * `vercel.json` marks this as a backend deployment.
-* The backend automatically skips file logging on Vercel, so no Vercel environment variables are required for the simulation API.
+* The backend automatically skips file logging on Vercel.
 * `.vercelignore` keeps desktop build files, logs, caches, and the Windows DLL out of the serverless bundle.
 
 Deploy from the repository root:
@@ -164,7 +164,13 @@ curl https://your-project.vercel.app/health
 curl https://your-project.vercel.app/status
 ```
 
-Important: Vercel cannot access a local USB oscilloscope or load the bundled Windows DLL. Vercel Functions also are not the right runtime for the persistent WebSocket stream used by `/ws/signal`. Use Vercel for the HTTP API/simulation deployment. For real Hantek hardware capture and live waveform streaming, run the backend on the Windows machine connected to the device.
+Important: Vercel cannot access a local USB oscilloscope or load the bundled Windows DLL. Vercel Functions also are not the right runtime for the persistent WebSocket stream used by `/ws/signal`. For real Hantek hardware capture and live waveform streaming, run the backend on the Windows machine connected to the device. The desktop app defaults to `http://127.0.0.1:8765` and `ws://127.0.0.1:8765/ws/signal`.
+
+Demo/simulation mode is opt-in only. To generate synthetic data for development, set:
+
+```bash
+set OSCILLOSCOPE_SIMULATION_ENABLED=true
+```
 
 ---
 

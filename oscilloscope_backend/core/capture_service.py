@@ -119,7 +119,7 @@ class CaptureService:
                         amplitude=self._settings.simulation_amplitude,
                     )
                     self._sim_time_s += len(y) / rate if rate > 0 else 0.0
-                elif self._device_manager.state == DeviceState.CONNECTED:
+                elif self._device_manager.state in (DeviceState.CONNECTED, DeviceState.CAPTURING):
                     # Real HT6000 path only while session is connected (no sine overlay).
                     y = self._sdk.read_data()
                     if y.size > 0:

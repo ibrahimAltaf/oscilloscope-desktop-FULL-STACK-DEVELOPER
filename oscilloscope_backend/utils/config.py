@@ -77,7 +77,9 @@ class Settings(BaseSettings):
     time_div_s: float = 1e-3  # seconds per division (nominal)
 
     # --- Simulation (no hardware) ---
-    simulation_enabled: bool = True
+    # Keep demo output opt-in so the desktop app never shows a generated waveform
+    # when the Hantek hardware is not actually streaming.
+    simulation_enabled: bool = False
     simulation_frequency_hz: float = 10_000.0
     simulation_amplitude: float = 1.0
 

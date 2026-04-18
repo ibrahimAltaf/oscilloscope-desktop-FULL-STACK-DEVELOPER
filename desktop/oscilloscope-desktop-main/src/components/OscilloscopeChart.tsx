@@ -3,11 +3,10 @@ import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { RollingXY } from "@/lib/rollingBuffers";
 import { useSignalWebSocket, type WsState } from "@/hooks/useSignalWebSocket";
-import { isSignalBatch, type SignalBatch } from "@/types/signal";
+import type { SignalBatch } from "@/types/signal";
 
 type Props = {
   wsUrl: string | null;
-  apiBase: string | null;
   streaming: boolean;
   onWsState?: (s: WsState) => void;
   voltDiv?: string;
@@ -119,7 +118,7 @@ function makeOpts(
   };
 }
 
-export function OscilloscopeChart({ wsUrl, apiBase, streaming, onWsState, voltDiv, timeDiv }: Props) {
+export function OscilloscopeChart({ wsUrl, streaming, onWsState, voltDiv, timeDiv }: Props) {
   const faceRef = useRef<HTMLDivElement>(null);
   const plotRef = useRef<uPlot | null>(null);
   const bufferRef = useRef(new RollingXY());
@@ -225,40 +224,12 @@ export function OscilloscopeChart({ wsUrl, apiBase, streaming, onWsState, voltDi
     [scheduleDraw],
   );
 
-  const useHttpPolling = Boolean(apiBase?.includes("vercel.app"));
-
   useSignalWebSocket({
     url: wsUrl,
-    enabled: streaming && !!wsUrl && !useHttpPolling,
+    enabled: streaming && !!wsUrl,
     onBatches,
     onConnectionChange: (s) => onWsState?.(s),
   });
-
-  useEffect(() => {
-    if (!streaming || !useHttpPolling) return;
-    let cancelled = false;
-    onWsState?.("open");
-    const tick = async () => {
-      try {
-        const res = await window.electronAPI.getSignalBatch();
-        if (cancelled) return;
-        if (res.ok && isSignalBatch(res.data)) {
-          onBatches([res.data]);
-        } else {
-          onWsState?.("error");
-        }
-      } catch {
-        if (!cancelled) onWsState?.("error");
-      }
-    };
-    tick();
-    const id = setInterval(tick, 120);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-      onWsState?.("idle");
-    };
-  }, [streaming, useHttpPolling, onBatches, onWsState]);
 
   useEffect(() => {
     if (!streaming) {

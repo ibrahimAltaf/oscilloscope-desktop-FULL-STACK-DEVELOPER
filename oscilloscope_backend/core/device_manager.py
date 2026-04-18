@@ -181,7 +181,7 @@ class DeviceManager:
             self._reconnect_failures += 1
             st = self._state
 
-        if st == DeviceState.CONNECTED:
+        if st in (DeviceState.CONNECTED, DeviceState.CAPTURING):
             try:
                 self._sdk.stop_capture()
             except Exception as e:

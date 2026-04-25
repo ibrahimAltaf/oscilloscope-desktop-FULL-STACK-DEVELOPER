@@ -10,3 +10,8 @@ oscilloscope_backend/logs/
 desktop/
 oscilloscope_backend/hantek/HTHardDll.dll
 
+# Exclude root package.json so Vercel treats this as a pure Python project
+# (prevents Vercel from running npm build and looking for a public/ directory).
+# Keep it locally for `npm run dev` convenience scripts.
+package.json
+

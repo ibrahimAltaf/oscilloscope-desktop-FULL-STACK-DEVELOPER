@@ -1,5 +1,12 @@
-# Python 3.11+
+# Vercel cloud deployment — minimal runtime dependencies
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
+
+# Local development and oscilloscope_backend module (not deployed to Vercel)
 numpy>=1.26.0
 pydantic-settings>=2.0.0
+
+# Windows-only / local-only (excluded from Vercel build via requirements above)
+# pefile        — Windows PE inspection; install manually: pip install pefile
+# pyqtgraph     — Qt-based plotting GUI; install manually: pip install pyqtgraph
+# PySide6       — Qt bindings; install manually: pip install PySide6

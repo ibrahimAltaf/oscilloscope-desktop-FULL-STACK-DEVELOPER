@@ -21,3 +21,4 @@ desktop/oscilloscope-desktop-main/dist-electron/
 desktop/oscilloscope-desktop-main/release/
 
 .vercel/
+.vercel

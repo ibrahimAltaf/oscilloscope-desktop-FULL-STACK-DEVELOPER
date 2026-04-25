@@ -1,0 +1,38 @@
+appId: com.oscilloscope.desktop
+productName: Oscilloscope Desktop
+copyright: Copyright © 2024 Oscilloscope Desktop
+
+directories:
+  output: release
+
+# Files bundled into the asar package (renderer + electron main)
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+
+# Extra resources copied alongside the app (accessible at process.resourcesPath)
+# sdk/ contains the real hardware_service.py + capture_worker.py + hthard_wrapper.py
+# backend/ kept for the services shim and schemas
+extraResources:
+  - from: ../../sdk
+    to: sdk
+    filter:
+      - "**/*.py"
+      - "!**/__pycache__/**"
+  - from: ../../backend
+    to: backend
+    filter:
+      - "**/*.py"
+      - "!**/__pycache__/**"
+
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: Oscilloscope-Desktop-${version}-${arch}.exe
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

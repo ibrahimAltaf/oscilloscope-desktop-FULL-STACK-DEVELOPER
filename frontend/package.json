@@ -1,0 +1,9 @@
+{
+  "name": "oscilloscope-frontend",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix ../desktop/oscilloscope-desktop-main run electron:dev",
+    "build": "npm --prefix ../desktop/oscilloscope-desktop-main run build",
+    "dist:win": "npm --prefix ../desktop/oscilloscope-desktop-main run dist:win"
+  }
+}

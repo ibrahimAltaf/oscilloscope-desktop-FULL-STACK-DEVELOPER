@@ -1,0 +1,18 @@
+{
+  "name": "oscilloscope-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Oscilloscope Backend — Vercel API docs + local dev scripts",
+  "scripts": {
+    "install:python": "pip install fastapi uvicorn pydantic-settings numpy",
+    "build": "echo 'Python backend — no build step required for Vercel deployment.'",
+    "dev": "uvicorn api.vercel_app:app --host 127.0.0.1 --port 8765 --reload",
+    "start": "uvicorn api.vercel_app:app --host 0.0.0.0 --port 8765",
+    "dev:full": "uvicorn oscilloscope_backend.api.main:app --host 127.0.0.1 --port 8765 --reload",
+    "deploy": "vercel --prod",
+    "deploy:preview": "vercel"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

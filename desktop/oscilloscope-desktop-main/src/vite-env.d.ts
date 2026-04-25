@@ -2,24 +2,22 @@
 
 type CaptureResult = {
   ok: boolean;
-  data: unknown;
-  status: number;
+  result?: unknown;
   error?: string;
 };
 
-type AppConfig = {
-  apiBase: string;
-  wsUrl: string;
+type PythonEvent = {
+  event: string;
+  payload: Record<string, unknown>;
 };
 
 declare global {
   interface Window {
-    electronAPI: {
-      startCapture: () => Promise<CaptureResult>;
-      stopCapture: () => Promise<CaptureResult>;
-      getStatus: () => Promise<CaptureResult>;
-      getSignalBatch: () => Promise<CaptureResult>;
-      getConfig: () => Promise<AppConfig>;
+    desktopAPI: {
+      pickDll: () => Promise<{ ok: boolean; result?: { dllPath: string }; error?: string }>;
+      rpc: (payload: { method: string; params?: Record<string, unknown> }) => Promise<CaptureResult>;
+      systemInfo: () => Promise<{ ok: boolean; result?: { electronArch: string }; error?: string }>;
+      onPythonEvent: (cb: (evt: PythonEvent) => void) => () => void;
     };
   }
 }

@@ -16,9 +16,10 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
+    "types": ["node"],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["renderer/src/*"]
     }
   },
-  "include": ["src", "electron"]
+  "include": ["src", "renderer/src", "electron"]
 }

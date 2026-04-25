@@ -1,0 +1,137 @@
+.app {
+  font-family: Inter, Arial, sans-serif;
+  color: #e7e7e7;
+  background: #111;
+  min-height: 100vh;
+  padding: 12px;
+}
+
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.app-header h1 {
+  margin: 0 0 4px 0;
+}
+
+.cloud-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.cloud-badge {
+  font-size: 11px;
+  color: #8bd3ff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+
+.btn-cloud {
+  background: #0e2e45;
+  color: #8bd3ff;
+  border: 1px solid #1e4f6e;
+  border-radius: 6px;
+  padding: 5px 9px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-cloud:hover {
+  background: #1a4a6e;
+}
+
+.subtitle {
+  color: #9e9e9e;
+  margin: 0;
+}
+
+.panel {
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #1a1a1a;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 6px 10px;
+}
+
+button {
+  background: #1f4f7a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+input {
+  background: #0f0f0f;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.warn-box {
+  margin-top: 8px;
+  color: #f0be43;
+}
+
+.error-box {
+  margin-top: 8px;
+  color: #ff6f6f;
+}
+
+.chart {
+  width: 100%;
+  background: #0d0d0d;
+  border: 1px solid #2b2b2b;
+}
+
+.chart polyline {
+  fill: none;
+  stroke: #43d1ff;
+  stroke-width: 1;
+}
+
+.logs {
+  max-height: 160px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.log-error {
+  color: #ff7e7e;
+}
+
+.log-warning {
+  color: #f2ca62;
+}
+
+.log-info {
+  color: #8bd38b;
+}
